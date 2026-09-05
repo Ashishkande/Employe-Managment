@@ -1,77 +1,90 @@
 version: '3.8'
 
 services:
-  # FastAPI Application Service
+
+  # ================================================================
+  # FastAPI Backend Service
+  # ================================================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+
     container_name: employee_api_backend
+
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+
     env_file:
       - .env
+
     environment:
+      # Application
       - ENVIRONMENT=${ENVIRONMENT:-production}
+
+      # AWS RDS PostgreSQL
       - DATABASE_URL=${DATABASE_URL}
-      - STORAGE_MODE=${STORAGE_MODE:-s3}
+
+      # AWS Configuration
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+      # Storage
+      - STORAGE_MODE=${STORAGE_MODE:-s3}
+
+      # S3
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
+
+      # SQS
       - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+
     depends_on:
-      db:
-        condition: service_healthy
       localstack:
         condition: service_started
+
     restart: always
 
+
+  # ================================================================
   # React Frontend Service
+  # ================================================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+
     container_name: employee_api_frontend
+
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+
     depends_on:
       - backend
+
     restart: always
 
-  # PostgreSQL Relational Database Service
-  db:
-    image: postgres:16-alpine
-    container_name: employee_api_db
-    env_file:
-      - .env
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-employeedb}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
-  # LocalStack AWS Emulation Service (S3 & SQS)
+  # ================================================================
+  # LocalStack AWS Emulator
+  # Provides:
+  #   - S3
+  #   - SQS
+  # ================================================================
   localstack:
     image: localstack/localstack:latest
+
     container_name: employee_api_localstack
+
     ports:
       - "${LOCALSTACK_PORT:-4566}:4566"
+
     environment:
       - SERVICES=${LOCALSTACK_SERVICES:-s3,sqs}
       - DEFAULT_REGION=${AWS_REGION:-us-east-1}
+
     volumes:
       - "./localstack-init:/etc/localstack/init/ready.d"
 
-volumes:
-  postgres_data:
-
+    restart: always
