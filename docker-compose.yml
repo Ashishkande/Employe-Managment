@@ -8,17 +8,19 @@ services:
       dockerfile: Dockerfile
     container_name: employee_api_backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
+    env_file:
+      - .env
     environment:
-      - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://postgres:postgres_secure_pass@db:5432/employeedb
-      - STORAGE_MODE=s3
-      - AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=mock_access_key
-      - AWS_SECRET_ACCESS_KEY=mock_secret_key
-      - S3_BUCKET_NAME=employee-photos-bucket
-      - S3_ENDPOINT_URL=http://localstack:4566
-      - SQS_QUEUE_URL=http://localstack:4566/000000000000/employee-photo-tasks
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATABASE_URL=${DATABASE_URL}
+      - STORAGE_MODE=${STORAGE_MODE:-s3}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -33,7 +35,7 @@ services:
       dockerfile: Dockerfile
     container_name: employee_api_frontend
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
     restart: always
@@ -42,16 +44,18 @@ services:
   db:
     image: postgres:16-alpine
     container_name: employee_api_db
+    env_file:
+      - .env
     environment:
-      - POSTGRES_DB=employeedb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_secure_pass
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d employeedb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-employeedb}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -61,12 +65,13 @@ services:
     image: localstack/localstack:latest
     container_name: employee_api_localstack
     ports:
-      - "4566:4566"
+      - "${LOCALSTACK_PORT:-4566}:4566"
     environment:
-      - SERVICES=s3,sqs
-      - DEFAULT_REGION=us-east-1
+      - SERVICES=${LOCALSTACK_SERVICES:-s3,sqs}
+      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
     volumes:
       - "./localstack-init:/etc/localstack/init/ready.d"
 
 volumes:
   postgres_data:
+
