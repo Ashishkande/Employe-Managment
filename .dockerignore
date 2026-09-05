@@ -1,0 +1,34 @@
+# Git
+.git/
+.gitignore
+
+# Documentation & IaC
+README.md
+terraform/
+walkthrough.md
+implementation_plan.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+*.db
+*.sqlite
+uploads/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log
+
+# Environment & IDE
+.env
+.idea/
+.vscode/
+.DS_Store
