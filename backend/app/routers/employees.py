@@ -147,24 +147,32 @@ async def upload_employee_photo(
     db: Session = Depends(get_db)
 ):
     employee = db.query(Employee).filter(Employee.id == id).first()
+
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Employee with ID {id} not found."
         )
 
-    # Save to S3 or local storage
-    photo_url = await storage_service.upload_photo(file, employee_id=id)
+    # Upload photo and get S3 object key
+    photo_key = await storage_service.upload_photo(
+        file,
+        employee_id=id
+    )
 
-    # Update employee record
-    employee.photo_url = photo_url
+    # Store only the S3 object key
+    employee.photo_url = photo_key
+
     db.commit()
+    db.refresh(employee)
 
-    # Trigger asynchronous processing (e.g. SQS queue or background worker)
     task_id = async_task_service.dispatch_photo_processing(
         employee_id=id,
-        photo_url=photo_url
+        photo_url=photo_key
     )
+
+    # Generate temporary URL for response
+    photo_url = storage_service.generate_presigned_url(photo_key)
 
     return PhotoUploadResponse(
         message="Employee photo uploaded and dispatched for asynchronous thumbnail processing.",
