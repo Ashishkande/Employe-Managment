@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   # ================================================================
@@ -40,10 +38,6 @@ services:
       # SQS
       - SQS_QUEUE_URL=${SQS_QUEUE_URL}
 
-    depends_on:
-      localstack:
-        condition: service_started
-
     restart: always
 
 
@@ -62,29 +56,5 @@ services:
 
     depends_on:
       - backend
-
-    restart: always
-
-
-  # ================================================================
-  # LocalStack AWS Emulator
-  # Provides:
-  #   - S3
-  #   - SQS
-  # ================================================================
-  localstack:
-    image: localstack/localstack:latest
-
-    container_name: employee_api_localstack
-
-    ports:
-      - "${LOCALSTACK_PORT:-4566}:4566"
-
-    environment:
-      - SERVICES=${LOCALSTACK_SERVICES:-s3,sqs}
-      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
-
-    volumes:
-      - "./localstack-init:/etc/localstack/init/ready.d"
 
     restart: always
